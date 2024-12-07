@@ -167,16 +167,21 @@ def extract_serial_mail_data(serial_mail):
     return voltages_ch0, voltages_ch1, raw_input_bytes_ch0, raw_input_bytes_ch1, measurements_ch0, measurements_ch1, node
 
 
-def write_to_json(filename, voltages_ch0, voltages_ch1, raw_input_bytes_ch0, raw_input_bytes_ch1, measurement_ch0, measurement_ch1, node):
+def write_to_json(filename, voltages_ch0, voltages_ch1, raw_input_bytes_ch0, raw_input_bytes_ch1, measurements_ch0, measurements_ch1, node):
+
+    ch0_value = measurements_ch0[0] if len(measurements_ch0) == 1 else measurements_ch0
+    ch1_value = measurements_ch1[0] if len(measurements_ch1) == 1 else measurements_ch1
+
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S:%f")
 
     # Prepare data to save
     data = {
-        "Datetime": datetime.now().isoformat(),
+        "Datetime": timestamp,
         "RawInputBytesCh0": raw_input_bytes_ch0,
-        "MeasurementCh0": measurement_ch0,
+        "MeasurementCh0": ch0_value,
         "VoltagesCh0": voltages_ch0,  # Keep as a list of dicts
         "RawInputBytesCh1": raw_input_bytes_ch1,
-        "MeasurementCh1": measurement_ch1,
+        "MeasurementCh1": ch1_value,
         "VoltagesCh1": voltages_ch0,  # Keep as a list of dicts
         "Node": node
     }
@@ -264,7 +269,7 @@ def get_dynamic_filename(node, format):
         str: A dynamically generated filename.
     """
     # Get the current timestamp
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S:%f")
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H:%M:%S:%f")
 
     # Format the filename
     filename = f"P{node}_{timestamp}.{format}"
@@ -279,6 +284,7 @@ def main():
     parser.add_argument("--port", type=str, required=True, help="Serial port (e.g., /dev/ttyS0 or COM3)")
     parser.add_argument("--baudrate", type=int, default=115200, help="Baud rate (default: 115200)")
     parser.add_argument("--format", type=str, choices=["csv", "json"], required=True, help="Output format (csv or json)")
+    parser.add_argument("--path", type=str, default=".", help="Path to save the output file (default: current directory)")
     args = parser.parse_args()
 
     # Open the serial connection
@@ -297,7 +303,8 @@ def main():
                 voltages_ch0, voltages_ch1, raw_input_bytes_ch0, raw_input_bytes_ch1, measurements_ch0, measurements_ch1, node = extract_serial_mail_data(serial_mail)
 
                 if filename is None:
-                    filename = get_dynamic_filename(node, args.format)
+                    base_filename = get_dynamic_filename(node, args.format)
+                    filename = os.path.join(args.path, base_filename)
                     print(f"Data will be saved to {filename}")
                 
                 # Print data

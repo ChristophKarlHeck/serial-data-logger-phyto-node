@@ -1,4 +1,4 @@
-# Serial Data Logger for Phyto Node Classifier
+# Serial Data Logger for Phyto Node
 
 `serial-data-logger` is a Python-based tool for reading, processing, and exporting serial data transmitted via a serial port. It decodes structured data using the FlatBuffers serialization library, converts raw byte measurements into analog voltages, and exports the results to JSON or CSV formats.
 
@@ -7,6 +7,8 @@
 ## Features
 
 - **Serial Communication**: Reads structured binary data from a serial port.
+- **FlatBuffers Decoding**: Decodes serialized messages using the FlatBuffers library.
+- **Dynamic File Naming**: The output file is dynamically named based on the node number and the start time of logging (e.g., P1_2024-11-06 11:58:05.csv).
 - **Data Conversion**: Converts 3-byte raw data into analog voltages using configurable parameters (`databits`, `vref`, `gain`).
 - **Custom Export Options**:
   - Exports processed data to either JSON or CSV files.
@@ -32,17 +34,22 @@ pip install -r requirements.txt
 |-----------------|--------------|-------------------------------------------------------------------------|
 | `--port`       | Yes          | Serial port to read from (e.g., `/dev/ttyS0` or `COM3`).                |
 | `--baudrate`   | No           | Baud rate for serial communication (default: `115200`).                |
-| `--file`       | Yes          | Output file name (e.g., `measurement`).                |
 | `--format`     | Yes          | Output format: `csv` or `json`.                                         |
+| `--path`       | No           | Path to save the output file (default: current directory `.`).          |
 
 ## Example Commands
 ### Log Data to a CSV File
+Save to the current directory:
 ```bash
-python3 main.py --port /dev/ttyS0 --baudrate 115200 --file measurement --format csv
+python3 main.py --port /dev/ttyS0 --baudrate 115200 --format csv
+```
+Save to a custom directory:
+```bash
+python3 main.py --port /dev/ttyS0 --baudrate 115200 --format csv --path /home/chris/logs
 ```
 ### Log Data to a JSON File
 ```bash
-python3 main.py --port /dev/ttyS0 --baudrate 115200 --file measurement --format json
+python3 main.py --port /dev/ttyS0 --baudrate 115200 --format json
 ```
 
 ## How It Works
@@ -51,6 +58,10 @@ python3 main.py --port /dev/ttyS0 --baudrate 115200 --file measurement --format 
 
 1. **Serial Data Read**:
    - Reads structured binary data over a serial connection using `serial.Serial`.
+
+2. **Dynamic File Naming**:
+
+    - The filename is generated dynamically based on the node number and the start time of data logging
 
 2. **Decoding**:
    - Decodes data using FlatBuffers.
