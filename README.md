@@ -1,6 +1,6 @@
 # Serial Data Logger for Phyto Node
 
-`serial-data-logger` is a Python-based tool for reading, processing, and exporting serial data transmitted via a serial port. It decodes structured data using the FlatBuffers serialization library, converts raw byte measurements into analog voltages, and exports the results to JSON or CSV formats.
+`serial-data-logger` is a Python tool designed to read, process, and export serial data transmitted over a serial port. It utilizes the FlatBuffers serialization library to decode structured data, converts raw byte measurements into analog voltages, and exports the results in JSON or CSV formats. This tool serves as a data receiver and logger on a Raspberry Pi, interfacing with the phyto-node project available at https://github.com/ChristophKarlHeck/phyto-node.
 
 ---
 
