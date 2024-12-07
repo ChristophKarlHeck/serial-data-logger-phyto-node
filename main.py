@@ -218,13 +218,16 @@ def write_to_csv(filename, measurements_ch0, measurements_ch1):
             csv_writer.writeheader()
 
         # Get the current timestamp with microseconds
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S:%f")[:-3]  # Remove the last 3 digits of microseconds
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S:%f")  # Remove the last 3 digits of microseconds
+
+        ch0_value = measurements_ch0[0] if len(measurements_ch0) == 1 else measurements_ch0
+        ch1_value = measurements_ch1[0] if len(measurements_ch1) == 1 else measurements_ch1
 
         # Write the data row
         csv_writer.writerow({
             "datetime": timestamp,
-            "CH1": measurement_ch0,
-            "CH2": measurement_ch1
+            "CH1": ch0_value,
+            "CH2": ch0_value
         })
 
 
@@ -250,6 +253,23 @@ def print_serial_mail_data(voltages_ch0, voltages_ch1, raw_input_bytes_ch0, raw_
         print(f"  InputVoltage {i}: {voltage:.3f}")
 
 
+def get_dynamic_filename(node, format):
+    """
+    Generate a dynamic filename using the node number and the current timestamp.
+
+    Args:
+        node (int): The node number from FlatBuffers.
+
+    Returns:
+        str: A dynamically generated filename.
+    """
+    # Get the current timestamp
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S:%f")
+
+    # Format the filename
+    filename = f"P{node}_{timestamp}.{format}"
+
+    return filename
 
 
 
@@ -258,27 +278,15 @@ def main():
     parser = argparse.ArgumentParser(description="Read and decode SerialMail data from a serial port.")
     parser.add_argument("--port", type=str, required=True, help="Serial port (e.g., /dev/ttyS0 or COM3)")
     parser.add_argument("--baudrate", type=int, default=115200, help="Baud rate (default: 115200)")
-    parser.add_argument("--file", type=str, required=True, help="Output file name (e.g., output.csv or output.json)")
     parser.add_argument("--format", type=str, choices=["csv", "json"], required=True, help="Output format (csv or json)")
     args = parser.parse_args()
-
-    # Ensure the file has the correct extension
-    if args.format == "csv" and not args.file.endswith(".csv"):
-        args.file += ".csv"
-    elif args.format == "json" and not args.file.endswith(".json"):
-        args.file += ".json"
-
-    # Warn if the output file already exists
-    if os.path.isfile(args.file):
-        print(f"Warning: The file '{args.file}' already exists and will be appended to.")
-        user_input = input("Do you want to continue? (y/n): ").strip().lower()
-        if user_input != 'y':
-            print("Exiting without modifying the file.")
-            exit(0)
 
     # Open the serial connection
     serial_connection = serial.Serial(port=args.port, baudrate=args.baudrate, timeout=1)
     print(f"Listening for data on port {args.port} at {args.baudrate} baud...")
+
+    # Initialize filename as None
+    filename = None
 
     try:
         while True:
@@ -288,22 +296,26 @@ def main():
                 # Extract data
                 voltages_ch0, voltages_ch1, raw_input_bytes_ch0, raw_input_bytes_ch1, measurements_ch0, measurements_ch1, node = extract_serial_mail_data(serial_mail)
 
+                if filename is None:
+                    filename = get_dynamic_filename(node, args.format)
+                    print(f"Data will be saved to {filename}")
+                
                 # Print data
                 print_serial_mail_data(voltages_ch0, voltages_ch1, raw_input_bytes_ch0, raw_input_bytes_ch1, node)
 
                 # Write data to the selected file format
                 if args.format == "csv":
                     try:
-                        write_to_csv(args.file, measurements_ch0, measurements_ch1)
-                        print(f"Data successfully written to {args.file} in CSV format.")
+                        write_to_csv(filename, measurements_ch0, measurements_ch1)
+                        print(f"Data successfully written to {filename} in CSV format.")
                     except Exception as e:
-                        print(f"Failed to write data to {args.file} in CSV format: {e}")
+                        print(f"Failed to write data to {filename} in CSV format: {e}")
                 elif args.format == "json":
                     try:
-                        write_to_json(args.file, classification_active, channel, raw_input_bytes, voltages, classifications)
-                        print(f"Data successfully written to {args.file} in JSON format.")
+                        write_to_json(filename, voltages_ch0, voltages_ch1, raw_input_bytes_ch0, raw_input_bytes_ch1, measurements_ch0, measurements_ch1, node)
+                        print(f"Data successfully written to {filename} in JSON format.")
                     except Exception as e:
-                        print(f"Failed to write data to {args.file} in JSON format: {e}")
+                        print(f"Failed to write data to {filename} in JSON format: {e}")
                 else:
                     print(f"Unsupported format: {args.format}")
 
