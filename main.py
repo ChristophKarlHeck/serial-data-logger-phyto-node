@@ -291,7 +291,7 @@ def main():
                 # Print data
                 print_serial_mail_data(voltages_ch0, voltages_ch1, raw_input_bytes_ch0, raw_input_bytes_ch1, node)
 
-                Write data to the selected file format
+                # Write data to the selected file format
                 if args.format == "csv":
                     try:
                         write_to_csv(args.file, measurements_ch0, measurements_ch1)
