@@ -232,7 +232,7 @@ def write_to_csv(filename, measurements_ch0, measurements_ch1):
         csv_writer.writerow({
             "datetime": timestamp,
             "CH1": ch0_value,
-            "CH2": ch0_value
+            "CH2": ch1_value
         })
 
 
