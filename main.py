@@ -208,12 +208,6 @@ def write_to_csv(filename, measurements_ch0, measurements_ch1, last_timestep):
                 "CH2": ch1
             })
             last_timestep += increment
-        
-        csv_writer.writerow({
-            "datetime": 0,
-            "CH1": 0,
-            "CH2": 0
-        })
 
     return timestamp
 
