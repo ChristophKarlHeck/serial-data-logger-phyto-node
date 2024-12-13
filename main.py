@@ -4,37 +4,34 @@ import flatbuffers
 import json
 import csv
 import os
-from datetime import datetime
+import time
+from datetime import datetime, timedelta
 from SerialMail.SerialMail import SerialMail
 from SerialMail.Value import Value
 
-
 def extract_serial_mail_data(serial_mail):
-    try:
-        ch0_length = serial_mail.Ch0Length()
-        raw_input_bytes_ch0 = []
-        for i in range(ch0_length):
-            ch0 = serial_mail.Ch0(i)
-            byte_dict = {"Data0": ch0.Data0(), "Data1": ch0.Data1(), "Data2": ch0.Data2()}
-            raw_input_bytes_ch0.append(byte_dict)
+    # Extract voltage values (inputs)
+    ch0_length = serial_mail.Ch0Length()
+    raw_input_bytes_ch0 = []
+    for i in range(ch0_length):
+        ch0 = serial_mail.Ch0(i)
+        byte_dict = {"Data0": ch0.Data0(), "Data1": ch0.Data1(), "Data2": ch0.Data2()}
+        raw_input_bytes_ch0.append(byte_dict)
 
-        ch1_length = serial_mail.Ch1Length()
-        raw_input_bytes_ch1 = []
-        for i in range(ch1_length):
-            ch1 = serial_mail.Ch1(i)
-            byte_dict = {"Data0": ch1.Data0(), "Data1": ch1.Data1(), "Data2": ch1.Data2()}
-            raw_input_bytes_ch1.append(byte_dict)
+    ch1_length = serial_mail.Ch1Length()
+    raw_input_bytes_ch1 = []
+    for i in range(ch1_length):
+        ch1 = serial_mail.Ch1(i)
+        byte_dict = {"Data0": ch1.Data0(), "Data1": ch1.Data1(), "Data2": ch1.Data2()}
+        raw_input_bytes_ch1.append(byte_dict)
 
-        voltages_ch0, measurements_ch0 = get_analog_inputs(raw_input_bytes_ch0)
-        voltages_ch1, measurements_ch1 = get_analog_inputs(raw_input_bytes_ch1)
+    voltages_ch0, measurements_ch0 = get_analog_inputs(raw_input_bytes_ch0)
+    voltages_ch1, measurements_ch1 = get_analog_inputs(raw_input_bytes_ch1)
 
-        node = serial_mail.Node()
-        return voltages_ch0, voltages_ch1, raw_input_bytes_ch0, raw_input_bytes_ch1, measurements_ch0, measurements_ch1, node
+    # Extract other fields
+    node = int(serial_mail.Node())
 
-    except Exception as e:
-        print(f"Error extracting SerialMail data: {e}")
-        return None, None, None, None, None, None, None
-
+    return voltages_ch0, voltages_ch1, raw_input_bytes_ch0, raw_input_bytes_ch1, measurements_ch0, measurements_ch1, node
 
 
 def read_serial_mail(serial_connection):
@@ -104,8 +101,6 @@ def read_serial_mail(serial_connection):
             return None
 
 
-
-
 def get_analog_inputs(raw_input_bytes, databits=8388608, vref=2.5, gain=4.0):
     """
     Calculate analog values from 3-byte measurements.
@@ -140,31 +135,6 @@ def get_analog_inputs(raw_input_bytes, databits=8388608, vref=2.5, gain=4.0):
         inputs.append(round(voltage,4))
 
     return inputs, measurements
-
-
-def extract_serial_mail_data(serial_mail):
-    # Extract voltage values (inputs)
-    ch0_length = serial_mail.Ch0Length()
-    raw_input_bytes_ch0 = []
-    for i in range(ch0_length):
-        ch0 = serial_mail.Ch0(i)
-        byte_dict = {"Data0": ch0.Data0(), "Data1": ch0.Data1(), "Data2": ch0.Data2()}
-        raw_input_bytes_ch0.append(byte_dict)
-
-    ch1_length = serial_mail.Ch1Length()
-    raw_input_bytes_ch1 = []
-    for i in range(ch1_length):
-        ch1 = serial_mail.Ch1(i)
-        byte_dict = {"Data0": ch1.Data0(), "Data1": ch1.Data1(), "Data2": ch1.Data2()}
-        raw_input_bytes_ch1.append(byte_dict)
-
-    voltages_ch0, measurements_ch0 = get_analog_inputs(raw_input_bytes_ch0)
-    voltages_ch1, measurements_ch1 = get_analog_inputs(raw_input_bytes_ch1)
-
-    # Extract other fields
-    node = int(serial_mail.Node())
-
-    return voltages_ch0, voltages_ch1, raw_input_bytes_ch0, raw_input_bytes_ch1, measurements_ch0, measurements_ch1, node
 
 
 def write_to_json(filename, voltages_ch0, voltages_ch1, raw_input_bytes_ch0, raw_input_bytes_ch1, measurements_ch0, measurements_ch1, node):
@@ -208,9 +178,12 @@ def write_to_json(filename, voltages_ch0, voltages_ch1, raw_input_bytes_ch0, raw
         json.dump(existing_data, jsonfile, indent=4)  # Write with formatting for readability
 
 
-def write_to_csv(filename, measurements_ch0, measurements_ch1):
+def write_to_csv(filename, measurements_ch0, measurements_ch1, last_timestep):
     # Check if the file exists to decide whether to write a header
+
     file_exists = os.path.isfile(filename)
+
+    assert len(measurements_ch0) == len(measurements_ch1), "Channels must have the same length."
 
     # Open the CSV file in append mode
     with open(filename, mode="a", newline="") as csvfile:
@@ -223,17 +196,26 @@ def write_to_csv(filename, measurements_ch0, measurements_ch1):
             csv_writer.writeheader()
 
         # Get the current timestamp with microseconds
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S:%f")  # Remove the last 3 digits of microseconds
+        timestamp = datetime.now()
 
-        ch0_value = measurements_ch0[0] if len(measurements_ch0) == 1 else measurements_ch0
-        ch1_value = measurements_ch1[0] if len(measurements_ch1) == 1 else measurements_ch1
+        increment = (timestamp-last_timestep) / len(measurements_ch0)
 
         # Write the data row
+        for ch0, ch1 in zip(measurements_ch0, measurements_ch1):
+            csv_writer.writerow({
+                "datetime": last_timestep.strftime("%Y-%m-%d %H:%M:%S:%f"),
+                "CH1": ch0,
+                "CH2": ch1
+            })
+            last_timestep += increment
+        
         csv_writer.writerow({
-            "datetime": timestamp,
-            "CH1": ch0_value,
-            "CH2": ch1_value
+            "datetime": 0,
+            "CH1": 0,
+            "CH2": 0
         })
+
+    return timestamp
 
 
 def print_serial_mail_data(voltages_ch0, voltages_ch1, raw_input_bytes_ch0, raw_input_bytes_ch1, node):
@@ -293,6 +275,7 @@ def main():
 
     # Initialize filename as None
     filename = None
+    last_timestep = datetime.now() - timedelta(seconds=1)
 
     try:
         while True:
@@ -313,7 +296,7 @@ def main():
                 # Write data to the selected file format
                 if args.format == "csv":
                     try:
-                        write_to_csv(filename, measurements_ch0, measurements_ch1)
+                        last_timestep = write_to_csv(filename, measurements_ch0, measurements_ch1, last_timestep)
                         print(f"Data successfully written to {filename} in CSV format.")
                     except Exception as e:
                         print(f"Failed to write data to {filename} in CSV format: {e}")
