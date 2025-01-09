@@ -45,11 +45,51 @@ python3 main.py --port /dev/ttyS0 --baudrate 115200 --format csv
 ```
 Save to a custom directory:
 ```bash
-python3 main.py --port /dev/ttyS0 --baudrate 115200 --format csv --path /home/chris/logs
+python3 main.py --port /dev/ttyACM1 --baudrate 115200 --format csv --path /media/chris/e110508e-b067-4ed5-87a8-5c548bdd8f77
 ```
 ### Log Data to a JSON File
 ```bash
 python3 main.py --port /dev/ttyS0 --baudrate 115200 --format json
+```
+
+## Docker
+### Build the Docker Image
+```bash
+docker build -t serial-data-logger:python3.11 .
+```
+### Run in Docker
+Save to the current directory:
+```bash
+docker run --name serial-data-logger-container \
+  --restart=always \
+  --device=/dev/ttyACM1:/dev/ttyACM1 \
+  -v /media/chris/e110508e-b067-4ed5-87a8-5c548bdd8f77:/media/chris/e110508e-b067-4ed5-87a8-5c548bdd8f77 \
+  -d \
+  serial-data-logger:python3.11 \
+  --port /dev/ttyACM1 --baudrate 115200 --format csv --path /media/chris/e110508e-b067-4ed5-87a8-5c548bdd8f77
+```
+### Explanation of the `docker run` Command:
+1. `--name serial-data-logger-container`: Assigns a name to the container (`serial-data-logger-container`).
+2. `--restart=always`: Ensures the container restarts automatically if it crashes.
+3. `--device=/dev/ttyACM1:/dev/ttyACM1`: Gives the container access to the `/dev/ttyACM1` serial device on the host.
+4. `-v /media/chris/e110508e-b067-4ed5-87a8-5c548bdd8f77:/media/chris/e110508e-b067-4ed5-87a8-5c548bdd8f77`: Mounts the host directory for saving output (e.g., CSV files) to the same path inside the container.
+5. `serial-data-logger:python3.11`: Specifies the image to use for the container (`serial-data-logger` with Python 3.11).
+6. <b>Script Arguments</b>
+   * `--port /dev/ttyACM1`: Specifies the serial port.
+   * `--baudrate 115200`: Sets the baud rate.
+   * `--format csv`: Specifies the output format.
+   * `--path /media/chris/e110508e-b067-4ed5-87a8-5c548bdd8f77`: Sets the directory where the output files will be saved.
+
+### Check if the container is running
+
+```bash
+docker ps
+```
+
+### See Docker Container logs
+
+```bash
+docker logs -f serial-data-logger-container
 ```
 
 ## How It Works
