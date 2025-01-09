@@ -58,7 +58,6 @@ python3 main.py --port /dev/ttyS0 --baudrate 115200 --format json
 docker build -t serial-data-logger:python3.11 .
 ```
 ### Run in Docker
-Save to the current directory:
 ```bash
 docker run --name serial-data-logger-container \
   --restart=always \
