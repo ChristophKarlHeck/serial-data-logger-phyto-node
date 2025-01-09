@@ -270,6 +270,7 @@ def main():
     # Initialize filename as None
     filename = None
     last_timestep = datetime.now() - timedelta(seconds=1)
+    file_rotation_time = datetime.now() + timedelta(hours=12)
 
     try:
         while True:
@@ -279,9 +280,10 @@ def main():
                 # Extract data
                 voltages_ch0, voltages_ch1, raw_input_bytes_ch0, raw_input_bytes_ch1, measurements_ch0, measurements_ch1, node = extract_serial_mail_data(serial_mail)
 
-                if filename is None:
+                if filename is None or datetime.now() >= file_rotation_time:
                     base_filename = get_dynamic_filename(node, args.format)
                     filename = os.path.join(args.path, base_filename)
+                    file_rotation_time = datetime.now() + timedelta(hours=12)
                     print(f"Data will be saved to {filename}")
                 
                 # Print data
