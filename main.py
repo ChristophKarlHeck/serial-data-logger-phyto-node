@@ -287,7 +287,7 @@ def main():
                     print(f"Data will be saved to {filename}")
                 
                 # Print data
-                print_serial_mail_data(voltages_ch0, voltages_ch1, raw_input_bytes_ch0, raw_input_bytes_ch1, node)
+                #print_serial_mail_data(voltages_ch0, voltages_ch1, raw_input_bytes_ch0, raw_input_bytes_ch1, node)
 
                 # Write data to the selected file format
                 if args.format == "csv":
