@@ -63,6 +63,8 @@ docker run --name serial-data-logger-container \
   --restart=always \
   --device=/dev/ttyACM1:/dev/ttyACM1 \
   -v /media/chris/e110508e-b067-4ed5-87a8-5c548bdd8f77:/media/chris/e110508e-b067-4ed5-87a8-5c548bdd8f77 \
+   --log-opt max-size=10m \
+  --log-opt max-file=3 \
   -d \
   serial-data-logger:python3.11 \
   --port /dev/ttyACM1 --baudrate 115200 --format csv --path /media/chris/e110508e-b067-4ed5-87a8-5c548bdd8f77
